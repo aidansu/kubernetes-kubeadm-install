@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+   name: aidansu
+   labels:
+     name: aidansu
+     
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tomcat
+  namespace: aidansu
+spec:
+  selector:
+    matchLabels:
+      ingress-app: tomcat
+  replicas: 1
+  template: 
+    metadata:
+      labels:
+        ingress-app: tomcat
+    spec:
+      containers:
+      - name: tomcat
+        image: tomcat:9.0.29
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: tomcat
+  namespace: aidansu
+  labels:
+    app: tomcat
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080
+      protocol: TCP
+      name: http
+  selector:
+    ingress-app: tomcat
+  sessionAffinity: ClientIP
+  type: NodePort
+  
+  
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: tomcat
+  namespace: aidansu
+spec:
+  rules:
+  - host: tomcat.aidansu.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: tomcat
+          servicePort: 8080
